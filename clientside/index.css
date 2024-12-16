@@ -1,0 +1,41 @@
+* {
+    box-sizing: border-box;
+    border: none; 
+    margin: 0px;
+    padding: 0px;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+}
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+#nav-bar {
+    display: inline-flex;
+    max-height: max(5vh, 2rem);
+    width: 100%;
+    align-items: center;
+    gap: 1rem;
+
+    padding: 0.5rem 0.5rem;
+    background-color: lightcoral;
+}
+
+#nav-bar > * {
+    /* margin-right: 1rem; */
+}
+
+#field {
+    height: 80%;
+    width: 80%;
+    border: 0.25rem dashed black;
+    margin: auto;
+}
+
+#field-robot {
+    position: relative;
+}
