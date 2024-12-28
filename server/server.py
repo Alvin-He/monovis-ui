@@ -39,7 +39,7 @@ def nt_addr():
 
 
 
-nt_robotPosTable: ntcore.NetworkTable = nt.getTable("SmartDashboard").getSubTable("Vision").getSubTable("RobotPos")
+nt_robotPosTable: ntcore.NetworkTable = nt.getTable("Vision").getSubTable("RobotPos")
 robotPos_x = nt_robotPosTable.getDoubleTopic("x").subscribe(0)
 robotPos_y = nt_robotPosTable.getDoubleTopic("y").subscribe(0)
 robotPos_r = nt_robotPosTable.getDoubleTopic("r").subscribe(0)
@@ -56,5 +56,27 @@ def robot_pose():
         return "Data Not Yet Available", 503
 
     return {"x": robotPos_x.get(), "y": robotPos_y.get(), "r": robotPos_r.get()}, 200
+
+
+frame: bytes
+@app.route("/api/cam/upload", methods=["PUT"])
+def upload_cam(): 
+    if (not flask.request.method == "PUT"): return "Bad Request", 400
+    
+    frame = flask.request.get_data(cache=False)
+
+    return f"successfully uploaded frame of size {len(frame)}"
+
+@app.route("/api/cam/download", methods=["GET"])
+def download_cam():
+    if (not flask.request.method == "GET"): return "Bad Request", 400
+
+    resp = flask.make_response()
+    resp.status_code = 200
+    resp.headers["Content-Type"] = "application/octet-stream"
+    resp.set_data(frame)
+    resp.calculate_content_length()
+
+    return resp; 
 
 
