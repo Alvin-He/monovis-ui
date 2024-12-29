@@ -61,6 +61,7 @@ def robot_pose():
 frame: bytes
 @app.route("/api/cam/upload", methods=["PUT"])
 def upload_cam(): 
+    global frame
     if (not flask.request.method == "PUT"): return "Bad Request", 400
     
     frame = flask.request.get_data(cache=False)
@@ -69,6 +70,7 @@ def upload_cam():
 
 @app.route("/api/cam/download", methods=["GET"])
 def download_cam():
+    global frame
     if (not flask.request.method == "GET"): return "Bad Request", 400
 
     resp = flask.make_response()
