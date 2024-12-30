@@ -58,7 +58,7 @@ def robot_pose():
     return {"x": robotPos_x.get(), "y": robotPos_y.get(), "r": robotPos_r.get()}, 200
 
 
-frame: bytes
+frame: bytes = None
 @app.route("/api/cam/upload", methods=["PUT"])
 def upload_cam(): 
     global frame
@@ -72,6 +72,8 @@ def upload_cam():
 def download_cam():
     global frame
     if (not flask.request.method == "GET"): return "Bad Request", 400
+
+    if (frame == None): return "No Yet Aviliable", 404
 
     resp = flask.make_response()
     resp.status_code = 200
