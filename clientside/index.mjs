@@ -43,17 +43,35 @@ function resizeFieldToProportion() {
         field.style.width = `${w}px`; 
     }
 }
+
+let ntAddr = document.getElementById("nt-addr");
+let ntPort = document.getElementById("nt-port");
+let ntUpdate = document.getElementById("nt-update");
+ntAddr.value = "127.0.0.1"
+ntPort.value = "5810"
+async function OnNtUpdateClick(e) {
+    let [status, code] = await postNTAddrPort(ntAddr.value, ntPort.value);
+    if (!status) {
+        alert("NT Address Update Failed!\n\n" + code)
+    } else {
+        alert("NT Address suscessfully set")
+    }
+}
+ntUpdate.onclick = OnNtUpdateClick
+
+
 async function main() {
     resizeFieldToProportion();
     new ResizeObserver(resizeFieldToProportion).observe(document.body);
     
     updateRobotPos(new FrcPose2d(0, 0, 0))
+    
     while (true) {
 
-        newRobotPos = await fetchRobotPos(); 
+        newRobotPos = await getRobotPos(); 
         if (newRobotPos) updateRobotPos(newRobotPos);
         
-        await sleep(20);
+        await sleep(500);
     }
 }
 window.addEventListener("load", main);

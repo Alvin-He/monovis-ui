@@ -1,12 +1,18 @@
 import flask
 import json
+import sys
 import ntcore
+from wpimath.geometry import Pose2d, Rotation2d
 from flask_cors import CORS
+import wpimath.geometry
+import wpimath.units
 
 app = flask.Flask(__name__)
 CORS(app)
 
 nt = ntcore.NetworkTableInstance.getDefault()
+nt.setServer("127.0.0.1")
+nt.startClient4("monnovis-api-server")
 
 @app.route("/api/config/nt-team", methods=["POST"])
 def nt_team():
@@ -15,8 +21,10 @@ def nt_team():
     
     if (not "team" in jData): return "Bad Request Payload", 400
     team = int(jData["team"])
-    nt.setServerTeam(team)
-
+    try:
+        nt.setServerTeam(team)
+    except Exception as e:
+        return repr(e), 400
     return "Team Number Successfully Set", 200
 
 @app.route("/api/config/nt-addr", methods=["POST"])
@@ -26,17 +34,18 @@ def nt_addr():
 
     if (not "addr" in jData): return "Bad Request Payload", 400
     addr = jData["addr"]
+    try:
+        if ("port" in jData): 
+            port = int(jData["port"])
+            nt.setServer(addr, port)
+
+            return f"NT Server Address Successfully Set to {addr}, Port set to {port}", 200
+        else:
+            nt.setServer(addr)
     
-    if ("port" in jData): 
-        port = int(jData["port"])
-        nt.setServer(addr, port)
-
-        return f"NT Server Address Successfully Set to {addr}, Port set to {port}", 200
-    else:
-        nt.setServer(addr)
-
-        return f"NT Server Address Successfully Set to {addr}, Using Default Port", 200
-
+            return f"NT Server Address Successfully Set to {addr}, Using Default Port", 200
+    except Exception as e:
+        return repr(e), 400
 
 
 nt_robotPosTable: ntcore.NetworkTable = nt.getTable("Vision").getSubTable("RobotPos")
@@ -56,6 +65,55 @@ def robot_pose():
         return "Data Not Yet Available", 503
 
     return {"x": robotPos_x.get(), "y": robotPos_y.get(), "r": robotPos_r.get()}, 200
+
+nt_robotPosRePub: ntcore.StructPublisher = nt.getTable("Vision").getStructTopic("Robot_Pose", Pose2d).publish()
+nt_simPosePub: ntcore.StructPublisher = nt.getTable("Vision").getStructTopic("Sim_Pose", Pose2d).publish()
+nt_xPercentErrPub: ntcore.StructPublisher = nt.getTable("Vision").getDoubleTopic("xPercentErr").publish()
+nt_yPercentErrPub: ntcore.StructPublisher = nt.getTable("Vision").getDoubleTopic("yPercentErr").publish()
+nt_rPercentErrPub: ntcore.StructPublisher = nt.getTable("Vision").getDoubleTopic("rPercentErr").publish()
+nt_tPercentErrPub: ntcore.StructPublisher = nt.getTable("Vision").getDoubleTopic("totalPercentErr").publish()
+
+sim_pose = {"x": 0, "y": 0, "r": 0}
+@app.route("/api/simulation-pose", methods=["GET", "PUT"])
+def simulation_pose():
+    if flask.request.method == "GET":
+        nt_simPosePub.set(Pose2d(wpimath.units.meters(sim_pose["x"]), wpimath.units.meters(sim_pose["y"]), 
+                    Rotation2d.fromDegrees(wpimath.units.degrees(sim_pose["r"]))))
+        nt_robotPosRePub.set(Pose2d(wpimath.units.meters(robotPos_x.get()), 
+                                    wpimath.units.meters(robotPos_y.get()), 
+                                    Rotation2d.fromDegrees(wpimath.units.degrees(robotPos_r.get()))
+                            ))
+        return sim_pose, 200; 
+    elif flask.request.method == "PUT":
+        try:
+            j = flask.request.get_json(cache=False)
+            if ("x" in j and "y" in j and "r" in j):
+                sim_pose["x"] = float(j["x"])
+                sim_pose["y"] = float(j["y"])
+                sim_pose["r"] = float(j["r"])
+
+                x_perror = abs((robotPos_x.get() - sim_pose["x"]))
+                nt_xPercentErrPub.set(x_perror)
+                y_perror = abs((robotPos_y.get() - sim_pose["y"]))
+                nt_yPercentErrPub.set(y_perror)
+                r_perror = abs((robotPos_r.get() - sim_pose["r"]))
+                nt_rPercentErrPub.set(r_perror)
+
+                total_perror = x_perror + y_perror + r_perror
+                nt_tPercentErrPub.set(total_perror)
+
+                nt_simPosePub.set(Pose2d(wpimath.units.meters(sim_pose["x"]), wpimath.units.meters(sim_pose["y"]), 
+                    Rotation2d.fromDegrees(wpimath.units.degrees(sim_pose["r"]))))
+                nt_robotPosRePub.set(Pose2d(wpimath.units.meters(robotPos_x.get()), 
+                                            wpimath.units.meters(robotPos_y.get()), 
+                                            Rotation2d.fromDegrees(wpimath.units.degrees(robotPos_r.get()))
+                                    )
+                ) # republish robot pose in Pose2d for advantage scope
+                return "Suscess", 200
+        except:
+            pass    
+        return "Invalid Content", 400
+    else: return "Bad Request", 400
 
 
 frame: bytes = None

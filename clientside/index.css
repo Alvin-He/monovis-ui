@@ -39,3 +39,39 @@ body {
 #field-robot {
     position: relative;
 }
+
+#nt-config {
+    width: 22rem;
+    margin-left: auto;
+}
+
+#nt-config > h4 {
+    border: none;
+
+}
+
+#nt-config > *{
+    border: 2px solid black;
+    display:inline-block;
+}
+
+#nt-addr {
+    width: 7rem;
+}
+
+#nt-port {
+    width: 4rem;
+}
+
+#nt-update {
+    width: 3.5rem;
+    background-color: aquamarine;
+}
+
+#nt-update:hover {
+    background-color: #52A388;
+}
+
+#nt-update:active {
+    background-color: green;
+}
