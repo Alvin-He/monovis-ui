@@ -27,7 +27,7 @@ http_server: subprocess.Popen = start_http_server()
 api_server:subprocess.Popen = start_api_server()
 
 time.sleep(0.1)
-webbrowser.open(f"http://{ADDR}:{PORT}/", 2)
+# webbrowser.open(f"http://{ADDR}:{PORT}/", 2)
 print(f"launch.py INFO: open browser and go to http://{ADDR}:{PORT}/ to access monovis-ui")
 
 print(f"launch.py INFO: Starting Health Check on interval of {HEALTH_CHECK_INTERVAL_SECONDS}sec")
